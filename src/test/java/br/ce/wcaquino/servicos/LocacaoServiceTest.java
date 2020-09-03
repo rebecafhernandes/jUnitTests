@@ -12,15 +12,15 @@ import org.junit.*;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.ExpectedException;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import javax.xml.crypto.Data;
+import java.util.*;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 public class LocacaoServiceTest {
+    private Usuario usuario;
     private LocacaoService locacaoService;
     private List<Filme> filmes = new ArrayList<>();
 
@@ -35,6 +35,7 @@ public class LocacaoServiceTest {
 
     @Before
     public void setup() {
+        usuario = new Usuario("Rebeca");
         locacaoService = new LocacaoService();
 
         filmes.add(new Filme("As Branquelas", 1, 10.00));
@@ -42,9 +43,9 @@ public class LocacaoServiceTest {
     }
 
     @Test
-    public void teste() throws Exception {
-        //Cenário
-        Usuario usuario = new Usuario("Rebeca");
+    public void deveAlugarFilme() throws Exception {
+        Assume.assumeFalse(DataUtils.verificarDiaSemana(new Date(), Calendar.SATURDAY));
+
         //Ação
         Locacao locacao = locacaoService.alugarFilme(usuario, filmes);
 
@@ -56,25 +57,19 @@ public class LocacaoServiceTest {
         error.checkThat(locacao.getValor(), is(17.0));
         error.checkThat(locacao.getValor(), is(not(6.0)));
         error.checkThat(DataUtils.isMesmaData(locacao.getDataLocacao(), new Date()), is(true));
-
     }
 
-    @Test
-    public void testeFilmeSemEstoque2() {
+    @Test(expected = FilmeSemEstoqueException.class)
+    public void naoDeveAlugarFilmeSemEstoque() throws FilmeSemEstoqueException, LocadoraException {
         //Cenário
-        Usuario usuario = new Usuario("Rebeca");
+        List<Filme> filmesEstoque = new ArrayList<>();
+        filmesEstoque.add(new Filme("As Branquelas", 0, 10.00));
 
-        //Ação
-        try {
-            locacaoService.alugarFilme(usuario, filmes);
-//            Assert.fail("Deveria parar fio!");
-        } catch (Exception e) {
-            assertThat(e.getMessage(), is("Filme sem estoque!"));
-        }
+        locacaoService.alugarFilme(usuario, filmesEstoque);
     }
 
     @Test
-    public void testeUsuarioVazio() throws FilmeSemEstoqueException {
+    public void naoDeveAlugarFilmeSemUsuario() throws FilmeSemEstoqueException {
         //Cenário
         LocacaoService locacaoService = new LocacaoService();
 
@@ -88,9 +83,8 @@ public class LocacaoServiceTest {
     }
 
     @Test
-    public void testeFilmeVazio() throws FilmeSemEstoqueException, LocadoraException {
+    public void naoDeveAlugarFilmeSemFilme() throws FilmeSemEstoqueException, LocadoraException {
         //Cenário
-        Usuario usuario = new Usuario("Rebeca");
 
         expectedException.expect(LocadoraException.class);
         expectedException.expectMessage("Filme vazio!");
@@ -98,4 +92,71 @@ public class LocacaoServiceTest {
         locacaoService.alugarFilme(usuario, null);
     }
 
+    @Test
+    public void naoDevePagar25NoFilmeTres() throws FilmeSemEstoqueException, LocadoraException {
+        //Cenário
+        List<Filme> filmesTest = Arrays.asList(
+                new Filme("Filme 1", 4, 2.0),
+                new Filme("Filme 2", 3, 3.0),
+                new Filme("Filme 3", 2, 4.0)
+        );
+
+        //Ação
+        Locacao locacao = locacaoService.alugarFilme(usuario, filmesTest);
+
+        //Verificaçao
+        //2 + 3 + 3 = 8
+        assertThat(locacao.getValor(), is(8.0));
+    }
+
+    @Test
+    public void naoDevePagar50NoFilmeQuatro() throws FilmeSemEstoqueException, LocadoraException {
+        //Cenário
+        List<Filme> filmesTest = Arrays.asList(
+                new Filme("Filme 1", 4, 2.0),
+                new Filme("Filme 2", 3, 3.0),
+                new Filme("Filme 3", 2, 4.0),
+                new Filme("Filme 4", 1, 5.0)
+        );
+
+        //Ação
+        Locacao locacao = locacaoService.alugarFilme(usuario, filmesTest);
+
+        //Verificaçao
+        //2 + 3 + 3 + 2.5
+        assertThat(locacao.getValor(), is(10.5));
+    }
+
+    @Test
+    public void naoDevePagar75NoFilmeCinco() throws FilmeSemEstoqueException, LocadoraException {
+        //Cenário
+        List<Filme> filmesTest = Arrays.asList(
+                new Filme("Filme 1", 4, 2.0),
+                new Filme("Filme 2", 3, 3.0),
+                new Filme("Filme 3", 2, 4.0),
+                new Filme("Filme 4", 1, 5.0),
+                new Filme("Filme 5", 5, 1.0)
+        );
+
+        //Ação
+        Locacao locacao = locacaoService.alugarFilme(usuario, filmesTest);
+
+        //Verificaçao
+        //2 + 3 + 3 + 2.5 + 0.25
+        assertThat(locacao.getValor(), is(10.75));
+    }
+
+    @Test
+    public void naoDeveDevolverFilmeDomingo() throws FilmeSemEstoqueException, LocadoraException {
+        Assume.assumeFalse(DataUtils.verificarDiaSemana(new Date(), Calendar.SATURDAY));
+
+        List<Filme> filmesTest = Arrays.asList(new Filme("Desperados", 1, 5.50));
+
+        //Ação
+        Locacao locacao = locacaoService.alugarFilme(usuario, filmesTest);
+
+        //Verificaçao
+        boolean isMonday = DataUtils.verificarDiaSemana(locacao.getDataRetorno(), Calendar.MONDAY);
+        assertFalse(isMonday);
+    }
 }
