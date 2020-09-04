@@ -8,6 +8,8 @@ import br.ce.wcaquino.utils.DataUtils;
 import java.util.Arrays;
 import java.util.Date;
 
+import static br.ce.wcaquino.utils.DataUtils.obterDataComDiferencaDias;
+
 public class LocacaoBuilder {
     private Locacao elemento;
     private LocacaoBuilder(){}
@@ -48,6 +50,12 @@ public class LocacaoBuilder {
     public LocacaoBuilder comDataRetorno(Date param) {
         elemento.setDataRetorno(param);
         return this;
+    }
+
+    public LocacaoBuilder atrasado() {
+         elemento.setDataLocacao(obterDataComDiferencaDias(-4));
+         elemento.setDataRetorno(obterDataComDiferencaDias(-2));
+         return this;
     }
 
     public LocacaoBuilder comValor(Double param) {

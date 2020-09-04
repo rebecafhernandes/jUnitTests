@@ -1,19 +1,18 @@
 package br.ce.wcaquino.servicos;
 
-import static br.ce.wcaquino.utils.DataUtils.adicionarDias;
-
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-
+import br.ce.wcaquino.daos.LocacaoDao;
 import br.ce.wcaquino.entidades.Filme;
 import br.ce.wcaquino.entidades.Locacao;
 import br.ce.wcaquino.entidades.Usuario;
 import br.ce.wcaquino.exceptions.FilmeSemEstoqueException;
 import br.ce.wcaquino.exceptions.LocadoraException;
 import br.ce.wcaquino.utils.DataUtils;
-import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+
+import static br.ce.wcaquino.utils.DataUtils.adicionarDias;
 
 public class LocacaoService {
     public String vPublica;
@@ -21,6 +20,10 @@ public class LocacaoService {
     private String vPrivate;
     String vDefault;
     private double valorLocacao = 0;
+
+    private LocacaoDao locacaoDao;
+    private SPCService spcService;
+    private EmailService emailService;
 
     public Locacao alugarFilme(Usuario usuario, List<Filme> filmes) throws FilmeSemEstoqueException, LocadoraException {
 
@@ -62,6 +65,13 @@ public class LocacaoService {
             valorLocacao += filmeValue;
         }
 
+        try {
+            if (spcService.possuiNegativacao(usuario)) {
+                throw new LocadoraException("Usuário negativado.");
+            }
+        } catch (Exception e) {
+            throw new LocadoraException("SPC fora do ar!");
+        }
 
         locacao.setFilmes(filmes);
         locacao.setUsuario(usuario);
@@ -79,7 +89,28 @@ public class LocacaoService {
         locacao.setDataRetorno(dataEntrega);
 
         //Salvando a locacao...
+        locacaoDao.salvar(locacao);
+
         return locacao;
+    }
+
+    public void notificarAtrasos() {
+        List<Locacao> locacoes = locacaoDao.obterLocacoesPendentes();
+        for (Locacao loc: locacoes) {
+            if (loc.getDataRetorno().before(new Date())) {
+                emailService.notificarAtraso(loc.getUsuario());
+            }
+        }
+    }
+
+    public void prorrogarLocacao(Locacao locacao, int dias) {
+        Locacao novaLocacao = new Locacao();
+        novaLocacao = locacao;
+        novaLocacao.setDataLocacao(new Date());
+        novaLocacao.setDataRetorno(DataUtils.obterDataComDiferencaDias(3));
+        novaLocacao.setValor(locacao.getValor() * dias);
+        locacaoDao.salvar(novaLocacao);
+
     }
 
 }
