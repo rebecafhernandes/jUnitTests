@@ -8,6 +8,7 @@ import br.ce.wcaquino.exceptions.LocadoraException;
 import br.ce.wcaquino.servicos.LocacaoService;
 import br.ce.wcaquino.utils.DataUtils;
 import matchers.DiaSemanaMatcher;
+import matchers.Matchers;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.rules.ErrorCollector;
@@ -16,6 +17,9 @@ import org.junit.rules.ExpectedException;
 import javax.xml.crypto.Data;
 import java.util.*;
 
+import static matchers.Matchers.*;
+import static matchers.Matchers.caiEm;
+import static matchers.Matchers.caiSegunda;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
@@ -58,6 +62,8 @@ public class LocacaoServiceTest {
         error.checkThat(locacao.getValor(), is(17.0));
         error.checkThat(locacao.getValor(), is(not(6.0)));
         error.checkThat(DataUtils.isMesmaData(locacao.getDataLocacao(), new Date()), is(true));
+
+        error.checkThat(locacao.getDataRetorno(), isToday(1));
     }
 
     @Test(expected = FilmeSemEstoqueException.class)
@@ -95,7 +101,7 @@ public class LocacaoServiceTest {
 
     @Test
     public void deveDevolverSegundaAlugandoSabado() throws FilmeSemEstoqueException, LocadoraException {
-        Assume.assumeTrue(DataUtils.verificarDiaSemana(new Date(), Calendar.SATURDAY));
+//        Assume.assumeTrue(DataUtils.verificarDiaSemana(new Date(), Calendar.SATURDAY));
 
         List<Filme> filmesTest = Arrays.asList(new Filme("Desperados", 1, 5.50));
 
@@ -103,9 +109,11 @@ public class LocacaoServiceTest {
         Locacao locacao = locacaoService.alugarFilme(usuario, filmesTest);
 
         //Verificaçao
-        boolean isMonday = DataUtils.verificarDiaSemana(locacao.getDataRetorno(), Calendar.MONDAY);
-        assertTrue(isMonday);
+        /*boolean isMonday = DataUtils.verificarDiaSemana(locacao.getDataRetorno(), Calendar.MONDAY);
+        assertTrue(isMonday);*/
 
-        assertThat(locacao.getDataRetorno(), new DiaSemanaMatcher(Calendar.MONDAY));
+//        assertThat(locacao.getDataRetorno(), new DiaSemanaMatcher(Calendar.MONDAY));
+//        assertThat(locacao.getDataRetorno(), caiEm(Calendar.SUNDAY));
+        assertThat(locacao.getDataRetorno(), caiSegunda());
     }
 }

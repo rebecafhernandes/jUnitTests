@@ -66,8 +66,8 @@ public class CalculoValorLocacaoTest {
         assertThat(locacao.getValor(), is(valorLocacao));
     }
 
-    @Test
+    /*@Test
     public void print() {
         System.out.println("Valor: " + valorLocacao);
-    }
+    }*/
 }
