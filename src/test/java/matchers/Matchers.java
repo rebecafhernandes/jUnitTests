@@ -14,4 +14,8 @@ public class Matchers {
     public static DiferencaDiasMatcher isToday(int diferenciaDias) {
         return new DiferencaDiasMatcher(diferenciaDias);
     }
+
+    public static DiaSemanaMatcher caiNumaSegunda(){
+        return new DiaSemanaMatcher(Calendar.MONDAY);
+    }
 }

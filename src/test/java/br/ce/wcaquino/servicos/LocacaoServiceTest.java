@@ -8,22 +8,35 @@ import br.ce.wcaquino.exceptions.FilmeSemEstoqueException;
 import br.ce.wcaquino.exceptions.LocadoraException;
 import br.ce.wcaquino.utils.DataUtils;
 import builders.UsuarioBuilder;
-import matchers.Matchers;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import org.mockito.*;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 
 import static builders.FilmeBuilder.umFilme;
 import static builders.LocacaoBuilder.umLocacao;
 import static builders.UsuarioBuilder.umUsuario;
+import static matchers.Matchers.caiNumaSegunda;
+import static matchers.Matchers.isToday;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({LocacaoService.class, DataUtils.class})
 public class LocacaoServiceTest {
     @InjectMocks
     private LocacaoService locacaoService;
@@ -57,7 +70,7 @@ public class LocacaoServiceTest {
 
     @Test
     public void deveAlugarFilme() throws Exception {
-        Assume.assumeFalse(DataUtils.verificarDiaSemana(new Date(), Calendar.SATURDAY));
+        PowerMockito.whenNew(Date.class).withNoArguments().thenReturn(DataUtils.obterData(4, 9, 2020));
 
         //Cenário
         List<Filme> filmes = Arrays.asList(umFilme().comValor(17.0).agora());
@@ -69,6 +82,9 @@ public class LocacaoServiceTest {
         error.checkThat(locacao.getValor(), is(17.0));
         error.checkThat(locacao.getValor(), is(not(6.0)));
         error.checkThat(DataUtils.isMesmaData(locacao.getDataLocacao(), new Date()), is(true));
+//        error.checkThat(locacao.getDataRetorno(), isToday(0));
+        error.checkThat(DataUtils.isMesmaData(locacao.getDataLocacao(), DataUtils.obterData(4, 9, 2020)), is(true));
+        error.checkThat(DataUtils.isMesmaData(locacao.getDataRetorno(), DataUtils.obterData(5, 9, 2020)), is(true));
 
 //        error.checkThat(locacao.getDataRetorno(), isToday(1));
     }
@@ -109,23 +125,19 @@ public class LocacaoServiceTest {
     }
 
     @Test
-    public void deveDevolverSegundaAlugandoSabado() throws FilmeSemEstoqueException, LocadoraException {
-//        Assume.assumeTrue(DataUtils.verificarDiaSemana(new Date(), Calendar.SATURDAY));
+    public void deveDevolverSegundaAlugandoSabado() throws Exception {
         //Cenário
         Usuario usuario = umUsuario().agora();
-
         List<Filme> filmesTest = Arrays.asList(new Filme("Desperados", 1, 5.50));
+
+        PowerMockito.whenNew(Date.class).withNoArguments().thenReturn(DataUtils.obterData(5, 9, 2020));
 
         //Ação
         Locacao locacao = locacaoService.alugarFilme(usuario, filmesTest);
 
         //Verificaçao
-        /*boolean isMonday = DataUtils.verificarDiaSemana(locacao.getDataRetorno(), Calendar.MONDAY);
-        assertTrue(isMonday);*/
+        assertThat(locacao.getDataRetorno(), caiNumaSegunda());
 
-//        assertThat(locacao.getDataRetorno(), new DiaSemanaMatcher(Calendar.MONDAY));
-//        assertThat(locacao.getDataRetorno(), caiEm(Calendar.SUNDAY));
-//        assertThat(locacao.getDataRetorno(), caiSegunda());
     }
 
     @Test
@@ -216,7 +228,7 @@ public class LocacaoServiceTest {
         Locacao locacaoRetornada = argumentCaptor.getValue();
 
         error.checkThat(locacaoRetornada.getValor(), is(10.5));
-        error.checkThat(locacaoRetornada.getDataLocacao(), Matchers.isToday(0));
-        error.checkThat(locacaoRetornada.getDataRetorno(), Matchers.isToday(3));
+        error.checkThat(locacaoRetornada.getDataLocacao(), isToday(0));
+        error.checkThat(locacaoRetornada.getDataRetorno(), isToday(3));
     }
 }
