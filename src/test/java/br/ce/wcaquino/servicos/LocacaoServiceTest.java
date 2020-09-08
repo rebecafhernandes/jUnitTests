@@ -9,10 +9,7 @@ import br.ce.wcaquino.entidades.Usuario;
 import br.ce.wcaquino.exceptions.FilmeSemEstoqueException;
 import br.ce.wcaquino.exceptions.LocadoraException;
 import br.ce.wcaquino.utils.DataUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ErrorCollector;
 import org.junit.rules.ExpectedException;
 import org.mockito.*;
@@ -53,6 +50,18 @@ public class LocacaoServiceTest {
 	@Before
 	public void setup(){
 		MockitoAnnotations.initMocks(this);
+		System.out.println("Iniciando 2...");
+		CalculadoraTest.ordem.append(2);
+	}
+
+	@After
+	public void after() {
+		System.out.println("Finalizando 2...");
+	}
+
+	@AfterClass
+	public static void afterClass() {
+		System.out.println(CalculadoraTest.ordem.toString());
 	}
 	
 	@Test
